@@ -7,14 +7,19 @@ const Search = ({ setWeatherData }) => {
   const fetchWeather = async (e) => {
     e.preventDefault();
     setError(''); // Clear previous error
-    const API_KEY = '52c1f73a759cab9a3c6dceceedd05163'; // Replace with your actual API key
     try {
-      const response = await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&exclude={part}&appid=${API_KEY}`);
-      const data = await response.json();
-      if (data.cod !== 200) {
-        throw new Error(data.message);
+      const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+      const geocodeData = await geocodeResponse.json();
+      if (geocodeData.length === 0) {
+        throw new Error('Location not found');
       }
-      setWeatherData(data);
+      const { lat, lon } = geocodeData[0];
+      const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+      const weatherData = await weatherResponse.json();
+      setWeatherData({
+        location: query,
+        ...weatherData.current_weather,
+      });
     } catch (err) {
       setError(err.message);
     }
